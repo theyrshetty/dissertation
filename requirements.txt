@@ -1,0 +1,21 @@
+# --- Core solvers ---
+pymdptoolbox==4.0-b3      # MDP value/policy iteration
+numpy>=1.26
+
+# --- IR schema validation ---
+pydantic>=2.6             # typed schemas, easier than raw jsonschema for nested module IRs
+jsonschema>=4.21          # fallback / cross-check against the .json schema files directly
+
+# --- LLM client ---
+ollama        # Gemini SDK (2.5 Pro extraction/confirmation/revision calls)
+
+# --- Testing ---
+pytest>=8.0
+pytest-cov>=5.0
+
+# --- Config / env ---
+pyyaml>=6.0
+python-dotenv>=1.0
+
+
+

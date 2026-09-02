@@ -1,0 +1,48 @@
+
+
+## Phase 0 — Setup
+1. Pick your first scenario type: **repeated games** (cooperate/betray negotiation-style). Simplest to generate and solve — everything else gets added later.
+2. Set up your coding environment (Python is the natural choice — has solid libraries for game theory, MDPs, and Bayesian updating).
+3. Decide on your LLM access (API key, model choice) since you'll be calling it many times programmatically, not by hand in a chat window.
+
+## Phase 1 — Core Pipeline (Part A): Does splitting the job help?
+4. **Build the problem generator** — a script that randomly samples payoffs, player count, and horizon for a repeated game, within sane bounds (no trivially obvious choices).
+5. **Build the solver** — code that takes those sampled numbers and computes the true optimal move using real game theory. This is your answer key, computed instantly, no AI involved.
+6. **Build the clean paragraph renderer** — fill-in-the-blank templates that turn the sampled numbers into a natural-language scenario description.
+7. **Wire 4–6 together** into one function: run it → get a paragraph + its known-correct answer. Generate 5–10 by hand and sanity-check them yourself before scaling up.
+8. **Build the Direct-AI arm** — send the paragraph to the LLM, ask for a decision, extract its answer in clean comparable form.
+9. **Build the Translator-plus-Solver arm** — send the paragraph to the LLM but constrain it to output only structured data (JSON-like), then feed that into your Step 5 solver. The LLM never does the math.
+10. **Write the scoring code** — compare each arm's answer to the answer key. Pure equality check, no manual reading.
+11. **Run at scale** — loop steps 7–10 over a few hundred generated cases. Get your first headline number: accuracy, Direct-AI vs. Translator-plus-Solver.
+12. **Add the consistency check** — generate 2–3 different wordings of the same underlying scenario, run both arms on each, check if answers stay stable across wordings.
+
+*Checkpoint: you now have your primary result.*
+
+## Phase 2 — Revision System (Part B): Does the dependency graph help?
+13. **Extend your structured extraction (step 9) into a small graph** — nodes for each field (payoffs, horizon, etc.), edges showing what feeds into what.
+14. **Extend the generator** — a function that takes an existing scenario, changes exactly one field, and remembers which field changed.
+15. **Render the change as a follow-up sentence** (same rendering approach as step 6), e.g. "actually, suppose the payoff were X instead."
+16. **Feed the follow-up to the system** — original paragraph + original structure + follow-up sentence in, updated structure + list of recomputed fields out.
+17. **Score automatically, two ways**: (a) does the updated structure match the true "after" version from step 14? (b) does the recomputed field list exactly match the true downstream set from the graph in step 13?
+18. **Run at scale**, get your second headline result: % correctly updated, % with exactly the right recomputation.
+
+*Checkpoint: you now have your secondary result.*
+
+## Phase 3 — Expand Coverage (Part C)
+19. Repeat steps 4–18 for **sequential planning (MDP)** scenarios.
+20. Repeat steps 4–18 for **belief-updating (Bayesian)** scenarios.
+21. Report all headline numbers broken out by module type, to show the results generalize.
+
+## Phase 4 — Realism Check (Part D)
+22. **Add a "noisy" rendering mode** to your paragraph generator (step 6) — omit numbers, bury details in irrelevant narrative, use indirect phrasing, insert distractor numbers. The underlying true answer stays the same; only the surface text gets messier.
+23. **Re-run Phase 1 and Phase 2 on noisy paragraphs**, same scoring code, no changes needed.
+24. **Report clean-vs-noisy accuracy drop** for both arms — this is your evidence that structure extraction is more robust to real-world-style phrasing, not just clean text.
+25. *(Optional)* Write a handful of real, casually-worded example problems yourself, run them through the system, and discuss the outcomes qualitatively — no scoring needed here.
+
+## Phase 5 — Writeup
+26. Turn your headline numbers into tables/charts (accuracy by arm, consistency by arm, revision correctness/minimality, clean-vs-noisy drop, broken out by module type).
+27. Write up Results/Evaluation sections using these numbers.
+28. State the limitation explicitly (synthetic ground truth, ceiling of generator-produced realism) — this preempts the obvious reviewer pushback rather than leaving it for them to find.
+29. Assemble the final paper: Introduction → Related Work (you already have this) → Methodology (the doc I built you) → Results → Discussion/Limitations → Conclusion.
+
+**Practical note:** don't build Phases 2–4 before Phase 1 works end-to-end on real (if rough) data. Get one clean pipeline running on repeated games first — even with a tiny generator and a dozen test cases — before adding scale, revision, extra module types, or noise. Each later phase reuses the machinery from Phase 1, so a working foundation makes everything after it fast to bolt on.
